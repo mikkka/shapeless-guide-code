@@ -34,6 +34,7 @@ lazy val representations =
 lazy val csv =
   project.in(file("csv")).dependsOn(common)
 
+/*
 lazy val literaltypes =
   project.in(file("literaltypes")).dependsOn(common)
 
@@ -51,16 +52,17 @@ lazy val migrations =
 
 lazy val mapping =
   project.in(file("mapping")).dependsOn(common)
+*/
 
 lazy val root = project.in(file("."))
   .aggregate(
     helloworld,
     representations,
-    csv,
+    csv/*,
     literaltypes,
     json,
     numfields,
     random,
     migrations,
-    mapping
+    mapping*/
   )
