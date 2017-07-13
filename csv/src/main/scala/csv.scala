@@ -33,6 +33,11 @@ object CsvEncoder {
    implicit val booleanEnc: CsvEncoder[Boolean] =
      pure(1)(bool => List(if(bool) "yes" else "no"))
 
+  implicit def optEncoder[T](implicit enc: CsvEncoder[T]) : CsvEncoder[Option[T]] =
+    pure(enc.width) {
+      case Some(x) => enc.encode(x)
+      case None    => List.fill(enc.width)("")
+    }
 
   implicit val hnilEncoder: CsvEncoder[HNil] = pure(0)(hnil => Nil)
 
@@ -101,8 +106,8 @@ object MainCsv extends Demo {
 
   println("Shapes " + shapes)
   println("Shapes as CSV:\n" + writeCsv(shapes))
-//  println("Optional shapes " + optShapes)
-//  println("Optional shapes as CSV:\n" + writeCsv(optShapes))
+  println("Optional shapes " + optShapes)
+  println("Optional shapes as CSV:\n" + writeCsv(optShapes))
 }
 
 
