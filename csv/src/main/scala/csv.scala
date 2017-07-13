@@ -48,9 +48,9 @@ object CsvEncoder {
 
   implicit def coproductEncoder[H, T <: Coproduct]
               (implicit hEncoder: CsvEncoder[H], tEncoder: CsvEncoder[T]): CsvEncoder[H :+: T] =
-    pure(math.max(hEncoder.width, tEncoder.width)) {
-      case Inl(h) => hEncoder.encode(h)
-      case Inr(t) => tEncoder.encode(t)
+    pure(hEncoder.width + tEncoder.width) {
+      case Inl(h) => hEncoder.encode(h) ++ List.fill(tEncoder.width)("")
+      case Inr(t) => List.fill(hEncoder.width)("") ++ tEncoder.encode(t)
     }
 
 
@@ -65,6 +65,7 @@ object CsvEncoder {
 sealed trait Shape
 final case class Rectangle(width: Double, height: Double) extends Shape
 final case class Circle(radius: Double) extends Shape
+final case class Huyangle(width: Double, height: Double, olo: String) extends Shape
 
 sealed trait Tree[A]
 case class Branch[A](left: Tree[A], right: Tree[A]) extends Tree[A]
@@ -84,7 +85,8 @@ object MainCsv extends Demo {
       Rectangle(1, 2),
       Circle(3),
       Rectangle(4, 5),
-      Circle(6)
+      Circle(6),
+      Huyangle(14, 88, "olo")
     )
 
   val optShapes: List[Option[Shape]] =
