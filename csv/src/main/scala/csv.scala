@@ -1,6 +1,4 @@
-import shapeless.Generic
-import shapeless.{HList, ::, HNil}
-import shapeless.{Coproduct, :+:, CNil, Inl, Inr}
+import shapeless.{:+:, ::, CNil, Coproduct, Generic, HList, HNil, Inl, Inr, Lazy}
 
 
 trait CsvEncoder[A] {
@@ -42,9 +40,9 @@ object CsvEncoder {
   implicit val hnilEncoder: CsvEncoder[HNil] = pure(0)(hnil => Nil)
 
   implicit def hlistEncoder[H, T <: HList]
-              (implicit  hEncoder: CsvEncoder[H], tEncoder: CsvEncoder[T]): CsvEncoder[H :: T] = {
-    pure(hEncoder.width + tEncoder.width) { case head :: tail =>
-        hEncoder.encode(head) ++ tEncoder.encode(tail)
+              (implicit  hEncoder: Lazy[CsvEncoder[H]], tEncoder: CsvEncoder[T]): CsvEncoder[H :: T] = {
+    pure(hEncoder.value.width + tEncoder.width) { case head :: tail =>
+        hEncoder.value.encode(head) ++ tEncoder.encode(tail)
     }
   }
 
@@ -52,17 +50,17 @@ object CsvEncoder {
     pure(0)(cnil => throw new Exception("Inconceivable!"))
 
   implicit def coproductEncoder[H, T <: Coproduct]
-              (implicit hEncoder: CsvEncoder[H], tEncoder: CsvEncoder[T]): CsvEncoder[H :+: T] =
-    pure(hEncoder.width + tEncoder.width) {
-      case Inl(h) => hEncoder.encode(h) ++ List.fill(tEncoder.width)("")
-      case Inr(t) => List.fill(hEncoder.width)("") ++ tEncoder.encode(t)
+              (implicit hEncoder: Lazy[CsvEncoder[H]], tEncoder: CsvEncoder[T]): CsvEncoder[H :+: T] =
+    pure(hEncoder.value.width + tEncoder.width) {
+      case Inl(h) => hEncoder.value.encode(h) ++ List.fill(tEncoder.width)("")
+      case Inr(t) => List.fill(hEncoder.value.width)("") ++ tEncoder.encode(t)
     }
 
 
   implicit def genericEncoder[A, R]
-              (implicit gen: Generic.Aux[A, R], enc: CsvEncoder[R]): CsvEncoder[A] = {
-    pure(enc.width) {x =>
-      enc.encode(gen.to(x))
+              (implicit gen: Generic.Aux[A, R], enc: Lazy[CsvEncoder[R]]): CsvEncoder[A] = {
+    pure(enc.value.width) {x =>
+      enc.value.encode(gen.to(x))
     }
   }
 }
@@ -104,10 +102,23 @@ object MainCsv extends Demo {
       None
     )
 
+  val tree1 = Branch(
+    Branch(Leaf(1), Leaf(2)),
+    Branch(Leaf(3), Leaf(4))
+  )
+
+  val tree2 = Branch(
+    Branch(Leaf(21), Leaf(22)),
+    Branch(Leaf(23), Leaf(24))
+  )
+
   println("Shapes " + shapes)
   println("Shapes as CSV:\n" + writeCsv(shapes))
   println("Optional shapes " + optShapes)
   println("Optional shapes as CSV:\n" + writeCsv(optShapes))
+
+
+  println("Trees as CSV:\n" + writeCsv(List(tree1, tree2)))
 }
 
 
