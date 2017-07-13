@@ -1,10 +1,10 @@
-import shapeless.{HList, ::, HNil}
-import shapeless.Lazy
-import shapeless.{Coproduct, :+:, CNil, Inl, Inr}
 import shapeless.Generic
+import shapeless.{HList, ::, HNil}
+import shapeless.{Coproduct, :+:, CNil, Inl, Inr}
 
 
 trait CsvEncoder[A] {
+  def width: Int
   def encode(value: A): List[String]
 }
 
@@ -14,47 +14,49 @@ object CsvEncoder {
   def apply[A](implicit enc: CsvEncoder[A]): CsvEncoder[A] =
     enc
 
-  def pure[A](func: A => List[String]): CsvEncoder[A] =
+  def pure[A](w: Int)(func: A => List[String]): CsvEncoder[A] =
     new CsvEncoder[A] {
+      val width = w
       def encode(value: A): List[String] =
         func(value)
     }
 
    implicit val stringEnc: CsvEncoder[String] =
-     pure(str => List(str))
+     pure(1)(str => List(str))
 
    implicit val intEnc: CsvEncoder[Int] =
-     pure(num => List(num.toString))
+     pure(1)(num => List(num.toString))
 
   implicit val doubleEnc: CsvEncoder[Double] =
-    pure(num => List(num.toString))
+    pure(1)(num => List(num.toString))
 
    implicit val booleanEnc: CsvEncoder[Boolean] =
-     pure(bool => List(if(bool) "yes" else "no"))
+     pure(1)(bool => List(if(bool) "yes" else "no"))
 
 
-  implicit val hnilEncoder: CsvEncoder[HNil] = pure(hnil => Nil)
+  implicit val hnilEncoder: CsvEncoder[HNil] = pure(0)(hnil => Nil)
 
   implicit def hlistEncoder[H, T <: HList]
               (implicit  hEncoder: CsvEncoder[H], tEncoder: CsvEncoder[T]): CsvEncoder[H :: T] = {
-    pure { case head :: tail =>
+    pure(hEncoder.width + tEncoder.width) { case head :: tail =>
         hEncoder.encode(head) ++ tEncoder.encode(tail)
     }
   }
 
   implicit val cnilEncoder: CsvEncoder[CNil] =
-    pure(cnil => throw new Exception("Inconceivable!"))
+    pure(0)(cnil => throw new Exception("Inconceivable!"))
 
   implicit def coproductEncoder[H, T <: Coproduct]
-              (implicit hEncoder: CsvEncoder[H], tEncoder: CsvEncoder[T]): CsvEncoder[H :+: T] = pure {
-    case Inl(h) => hEncoder.encode(h)
-    case Inr(t) => tEncoder.encode(t)
-  }
+              (implicit hEncoder: CsvEncoder[H], tEncoder: CsvEncoder[T]): CsvEncoder[H :+: T] =
+    pure(math.max(hEncoder.width, tEncoder.width)) {
+      case Inl(h) => hEncoder.encode(h)
+      case Inr(t) => tEncoder.encode(t)
+    }
 
 
   implicit def genericEncoder[A, R]
               (implicit gen: Generic.Aux[A, R], enc: CsvEncoder[R]): CsvEncoder[A] = {
-    pure {x =>
+    pure(enc.width) {x =>
       enc.encode(gen.to(x))
     }
   }
