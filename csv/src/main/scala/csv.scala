@@ -39,28 +39,43 @@ object CsvEncoder {
 
   implicit val hnilEncoder: CsvEncoder[HNil] = pure(0)(hnil => Nil)
 
-  implicit def hlistEncoder[H, T <: HList]
-              (implicit  hEncoder: Lazy[CsvEncoder[H]], tEncoder: CsvEncoder[T]): CsvEncoder[H :: T] = {
-    pure(hEncoder.value.width + tEncoder.width) { case head :: tail =>
-        hEncoder.value.encode(head) ++ tEncoder.encode(tail)
+  implicit def hlistEncoder[H, T <: HList](
+                                            implicit
+                                            hEncoder: Lazy[CsvEncoder[H]],
+                                            tEncoder: CsvEncoder[T]
+                                          ): CsvEncoder[H :: T] = {
+//    println(hEncoder.value.width)
+    pure(hEncoder.value.width + tEncoder.width) {
+      case h :: t =>
+        hEncoder.value.encode(h) ++ tEncoder.encode(t)
     }
   }
 
   implicit val cnilEncoder: CsvEncoder[CNil] =
-    pure(0)(cnil => throw new Exception("Inconceivable!"))
+    pure(0)(cnil => ???)
 
-  implicit def coproductEncoder[H, T <: Coproduct]
-              (implicit hEncoder: Lazy[CsvEncoder[H]], tEncoder: CsvEncoder[T]): CsvEncoder[H :+: T] =
+  implicit def coproductEncoder[H, T <: Coproduct](
+                                                    implicit
+                                                    hEncoder: Lazy[CsvEncoder[H]],
+                                                    tEncoder: CsvEncoder[T]
+                                                  ): CsvEncoder[H :+: T] = {
+    //println(hEncoder.value.width)
     pure(hEncoder.value.width + tEncoder.width) {
       case Inl(h) => hEncoder.value.encode(h) ++ List.fill(tEncoder.width)("")
       case Inr(t) => List.fill(hEncoder.value.width)("") ++ tEncoder.encode(t)
     }
+  }
 
-
-  implicit def genericEncoder[A, R]
-              (implicit gen: Generic.Aux[A, R], enc: Lazy[CsvEncoder[R]]): CsvEncoder[A] = {
-    pure(enc.value.width) {x =>
-      enc.value.encode(gen.to(x))
+  implicit def genericEncoder[A, R](
+                                     implicit
+                                     gen: Generic.Aux[A, R],
+                                     enc: Lazy[CsvEncoder[R]]
+                                   ): CsvEncoder[A] = {
+    new CsvEncoder[A] {
+      def encode(value: A): List[String] = enc.value.encode(gen.to(value))
+      //cause of stackoverflow
+//      def width = enc.value.width
+      def width = 0
     }
   }
 }
