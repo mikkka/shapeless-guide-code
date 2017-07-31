@@ -5,15 +5,15 @@ trait Second[L <: HList] {
   def apply(value: L): Out
 }
 
+// Aux is unneeded
 object Second {
-  type Aux[L <: HList, O] = Second[L] {type Out = O}
+  def apply[L <: HList](implicit inst: Second[L]) = inst
 
-  def apply[L <: HList](implicit inst: Second[L]): Aux[L, inst.Out] = inst
-
-  implicit def hlistSecond[A, B, Rest <: HList]: Aux[A :: B :: Rest, B] =
+  implicit def hlistSecond[A, B, Rest <: HList] =
     new Second[A :: B :: Rest] {
       type Out = B
-      def apply(value: A :: B :: Rest): B = value.tail.head
+      def apply(value: A :: B :: Rest): B =
+        value.tail.head
     }
 }
 
