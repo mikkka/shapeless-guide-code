@@ -39,6 +39,6 @@ object MainNTH extends Demo {
     NTH2[String :: String :: HNil]
   }
 
-  println(n1(12 :: 13 :: HNil))
-  println(n2("foo" :: "bar" :: HNil))
+  println(n1(12 :: 13 :: HNil): Int)
+  println(n2("foo" :: "bar" :: HNil): String)
 }

@@ -1,3 +1,4 @@
+import Second.Aux
 import shapeless.{::, HList, HNil}
 
 trait Second[L <: HList] {
@@ -5,9 +6,10 @@ trait Second[L <: HList] {
   def apply(value: L): Out
 }
 
-// Aux is unneeded
 object Second {
-  def apply[L <: HList](implicit inst: Second[L]) = inst
+  type Aux[L <: HList, O] = Second[L] {type Out = O}
+
+  def apply[L <: HList](implicit inst: Second[L]): Aux[L, inst.Out] = inst
 
   implicit def hlistSecond[A, B, Rest <: HList] =
     new Second[A :: B :: Rest] {
@@ -22,6 +24,6 @@ object MainSecond extends Demo {
   val sec1 = Second[Int :: Int :: HNil]
   val sec2 = Second[String :: String :: HNil]
 
-  println(sec1(12 :: 13 :: HNil))
-  println(sec2("foo" :: "bar" :: HNil))
+  println(sec1(12 :: 13 :: HNil): Int)
+  println(sec2("foo" :: "bar" :: HNil): String)
 }
