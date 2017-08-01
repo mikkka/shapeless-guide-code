@@ -14,7 +14,7 @@ object Second {
   implicit def hlistSecond[A, B, Rest <: HList] =
     new Second[A :: B :: Rest] {
       type Out = B
-      def apply(value: A :: B :: Rest): B =
+      def apply(value: A :: B :: Rest): Out =
         value.tail.head
     }
 }

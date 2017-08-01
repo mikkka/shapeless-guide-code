@@ -11,17 +11,3 @@ def lastField[A, Repr <: HList](input: A)(
 ): last.Out = last.apply(gen.to(input))
 
 lastField(Rect(Vec(1, 2), Vec(3, 4)))
-
-/*
-def getWrappedValue[A, H](input: A)(
-  implicit
-  gen: Generic.Aux[A, H :: HNil]
-): H = gen.to(input).head
-*/
-
-import shapeless.ops.hlist.IsHCons
-def getWrappedValue[A, Repr <: HList, Head](in: A)(
-  implicit
-  gen: Generic.Aux[A, Repr],
-  isHCons: IsHCons.Aux[Repr, Head, HNil]
-): Head = gen.to(in).head
