@@ -34,13 +34,13 @@ lazy val representations =
 lazy val csv =
   project.in(file("csv")).dependsOn(common)
 
-/*
 lazy val literaltypes =
   project.in(file("literaltypes")).dependsOn(common)
 
 lazy val json =
   project.in(file("json")).dependsOn(common)
 
+/*
 lazy val numfields =
   project.in(file("numfields")).dependsOn(common)
 
@@ -58,9 +58,9 @@ lazy val shapeless_exercises = project.in(file("."))
   .aggregate(
     helloworld,
     representations,
-    csv/*,
+    csv,
     literaltypes,
-    json,
+    json/*,
     numfields,
     random,
     migrations,
