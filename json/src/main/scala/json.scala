@@ -58,20 +58,19 @@ object JsonEncoder {
         func(value)
     }
 
+  implicit val stringEnc: JsonEncoder[String] = pure(str => JsonString(str))
 
+  implicit val intEnc: JsonEncoder[Int] = pure(num => JsonNumber(num))
 
-  // implicit val stringEnc: JsonEncoder[String] =
-  //   pure(str => JsonString(str))
+  implicit val doubleEnc: JsonEncoder[Double] = pure(num => JsonNumber(num))
 
-  // implicit val intEnc: JsonEncoder[Int] =
-  //   pure(num => JsonNumber(num))
+  implicit val booleanEnc: JsonEncoder[Boolean] = pure(bool => JsonBoolean(bool))
 
-  // implicit val doubleEnc: JsonEncoder[Double] =
-  //   pure(num => JsonNumber(num))
+  implicit def listEncoder[A](implicit enc: JsonEncoder[A]): JsonEncoder[List[A]] =
+    pure(list => JsonArray(list.map(x => enc.encode(x))))
 
-  // implicit val booleanEnc: JsonEncoder[Boolean] =
-  //   pure(bool => JsonBoolean(bool))
-
+  implicit def optionEncder[A](implicit enc: JsonEncoder[A]): JsonEncoder[Option[A]] =
+    pure(opt => opt.map(x => enc.encode(x)).getOrElse(JsonNull))
 
 
   // implicit val hnilEnc: JsonObjectEncoder[HNil] =
@@ -117,15 +116,14 @@ final case class Circle(
 object Main extends Demo {
 
   val employee = Employee("Alice", 1, true)
-  val employee = Employee("Bob", 2, false)
-  val employee = Employee("Charlie", 3, false)
+//  val employee = Employee("Bob", 2, false)
+//  val employee = Employee("Charlie", 3, false)
 
   val iceCream = IceCream("Cornetto", 0, true)
-  val iceCream = IceCream("Sundae", 1, false)
+//  val iceCream = IceCream("Sundae", 1, false)
 
   val shape1: Shape = Rectangle(3, 4)
   val shape2: Shape = Circle(1)
-
 }
 
 
