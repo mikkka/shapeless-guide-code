@@ -1,5 +1,5 @@
-
-
+import shapeless.{Coproduct, :+:, CNil, Inl, Inr, HNil, HList, ::, LabelledGeneric, Witness, Lazy}
+import shapeless.labelled.FieldType
 
 sealed abstract class Json
 final case class JsonObject(fields: List[(String, Json)]) extends Json
@@ -73,17 +73,55 @@ object JsonEncoder {
     pure(opt => opt.map(x => enc.encode(x)).getOrElse(JsonNull))
 
 
-  // implicit val hnilEnc: JsonObjectEncoder[HNil] =
-  //   pureObj(hnil => JsonObject(Nil))
+   implicit val hnilEnc: JsonObjectEncoder[HNil] =
+     pureObj(hnil => JsonObject(Nil))
 
-  // implicit def hlistEnc // ...
+  implicit def hlistEnc[K <: Symbol, H, T <: HList](
+    implicit
+    witness: Witness.Aux[K],
+    hEnc: Lazy[JsonEncoder[H]],
+    tEnc: JsonObjectEncoder[T]
+  ): JsonObjectEncoder[FieldType[K, H] :: T] = {
 
-  // implicit val cnilEnc: JsonObjectEncoder[CNil] =
-  //   pureObj(cnil => ???)
+    val fieldName: String = witness.value.name
+    pureObj {hlist =>
+      val head = hEnc.value.encode(hlist.head)
+      val tail = tEnc.encode(hlist.tail)
 
-  // implicit def coproductEnc // ...
+      JsonObject((fieldName, head) :: tail.fields)
+    }
+  }
 
-  // implicit def genericEnc // ...
+  implicit def genericObjectEncoder[A, H <: HList](
+    implicit
+    generic: LabelledGeneric.Aux[A, H],
+    hEncoder: Lazy[JsonObjectEncoder[H]]
+    ): JsonEncoder[A] =
+
+    pureObj { value =>
+      hEncoder.value.encode(generic.to(value))
+    }
+
+  implicit val cnilEnc: JsonObjectEncoder[CNil] =
+    pureObj(cnil => throw new Exception("can't touch it!"))
+
+  implicit def coproductEnc[K <: Symbol, H, T <: Coproduct](
+    implicit
+    witness: Witness.Aux[K],
+    hEnc: Lazy[JsonEncoder[H]],
+    tEnc: JsonObjectEncoder[T]
+  ): JsonObjectEncoder[FieldType[K, H] :+: T] = {
+    val typeName = witness.value.name
+    pureObj {
+      case Inl(h) => JsonObject(List(typeName -> hEnc.value.encode(h)))
+      case Inr(t) => tEnc.encode(t)
+    }
+  }
+
+  implicit def genericEnc[A, H <: Coproduct](
+    implicit
+    generic: LabelledGeneric.Aux[A, H],
+    hEncoder: Lazy[JsonObjectEncoder[H]]): JsonEncoder[A] = pureObj {value => hEncoder.value.encode(generic.to(value))}
 }
 
 
@@ -91,13 +129,15 @@ object JsonEncoder {
 final case class Employee(
   name    : String,
   number  : Int,
-  manager : Boolean
+  manager : Boolean,
+  eshape  : Shape
 )
 
 final case class IceCream(
   name        : String,
   numCherries : Int,
-  inCone      : Boolean
+  inCone      : Boolean,
+  maker       : Employee
 )
 
 sealed trait Shape
@@ -115,15 +155,18 @@ final case class Circle(
 
 object Main extends Demo {
 
-  val employee = Employee("Alice", 1, true)
+  val employee = Employee("Alice", 1, true, Circle(14.88))
 //  val employee = Employee("Bob", 2, false)
 //  val employee = Employee("Charlie", 3, false)
 
-  val iceCream = IceCream("Cornetto", 0, true)
+  val iceCream = IceCream("Cornetto", 0, true, Employee("Foo Barov", 23, false, Rectangle(42, 3)))
 //  val iceCream = IceCream("Sundae", 1, false)
 
   val shape1: Shape = Rectangle(3, 4)
   val shape2: Shape = Circle(1)
+
+  println(Json.stringify(Json.encode(iceCream)))
+  println(Json.stringify(Json.encode(shape1)))
 }
 
 
