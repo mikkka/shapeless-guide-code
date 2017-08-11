@@ -46,10 +46,12 @@ lazy val numfields =
 
 lazy val random =
   project.in(file("random")).dependsOn(common)
+*/
 
 lazy val migrations =
   project.in(file("migrations")).dependsOn(common)
 
+/*
 lazy val mapping =
   project.in(file("mapping")).dependsOn(common)
 */
@@ -62,7 +64,7 @@ lazy val shapeless_exercises = project.in(file("."))
     literaltypes,
     json/*,
     numfields,
-    random,
-    migrations,
+    random*/,
+    migrations/*,
     mapping*/
   )
